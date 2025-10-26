@@ -1,0 +1,198 @@
+--// 🌊 BE HUB - Fluent UI Edition v3 (Auto Money + Delay + Name Input + Anti Slap)
+--// by Legiahuy
+
+local Library = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Library:CreateWindow({
+	Title = "🌊 BE HUB | Fluent UI",
+	SubTitle = "by Legiahuy",
+	TabWidth = 120,
+	Size = UDim2.fromOffset(520, 360),
+	Acrylic = true,
+	Theme = "Dark",
+	MinimizeKey = Enum.KeyCode.RightControl
+})
+
+local MainTab = Window:AddTab({ Title = "Main", Icon = "home" })
+local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
+
+----------------------------------------------------
+-- 🪙 AUTO MONEY SYSTEM
+----------------------------------------------------
+
+local AutoMoneyEnabled = false
+local Delay = 2
+local TargetName = ""
+
+MainTab:AddInput("TargetNameInput", {
+	Title = "👤 Nhập tên người chơi",
+	Default = "",
+	Placeholder = "VD: Legiahuy",
+}):OnChanged(function(Value)
+	TargetName = Value
+end)
+
+MainTab:AddInput("DelayInput", {
+	Title = "⏱️ Delay mỗi lần (giây)",
+	Default = "2",
+	Placeholder = "VD: 1.5, 2, 5...",
+	Numeric = true
+}):OnChanged(function(Value)
+	local num = tonumber(Value)
+	if num and num > 0 then
+		Delay = num
+	end
+end)
+
+MainTab:AddToggle("AutoMoneyToggle", {
+	Title = "💸 Auto Cộng Tiền",
+	Default = false
+}):OnChanged(function(Value)
+	AutoMoneyEnabled = Value
+	if Value then
+		task.spawn(function()
+			while AutoMoneyEnabled do
+				pcall(function()
+					if TargetName ~= "" then
+						local target = game:GetService("Players"):FindFirstChild(TargetName)
+						if target then
+							local args = { target }
+							game:GetService("ReplicatedStorage"):WaitForChild("RestartRemotes"):WaitForChild("GiveClaimMoney"):FireServer(unpack(args))
+							Library:Notify({
+								Title = "💰 Cộng tiền",
+								Content = "Đã gửi tiền cho: " .. TargetName,
+								Duration = 2
+							})
+						else
+							Library:Notify({
+								Title = "⚠️ Lỗi",
+								Content = "Không tìm thấy người chơi: " .. TargetName,
+								Duration = 2
+							})
+						end
+					else
+						Library:Notify({
+							Title = "⚠️ Nhập tên!",
+							Content = "Bạn cần nhập tên người chơi trước.",
+							Duration = 2
+						})
+					end
+				end)
+				task.wait(Delay)
+			end
+		end)
+	end
+end)
+
+----------------------------------------------------
+-- 🛡️ ANTI SLAP (SLAP TOWER)
+----------------------------------------------------
+
+local AntiSlapEnabled = false
+
+local function EnableAntiSlap()
+	local player = game.Players.LocalPlayer
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hum = char:WaitForChild("Humanoid")
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	-- Chống lực đẩy
+	for _, v in pairs(char:GetDescendants()) do
+		if v:IsA("BodyVelocity") or v:IsA("BodyThrust") or v:IsA("BodyForce") then
+			v:Destroy()
+		end
+	end
+
+	-- Tắt ragdoll, fall
+	hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+	hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+	hum.PlatformStand = false
+
+	-- Giữ yên vị trí (nếu bị knock)
+	task.spawn(function()
+		while AntiSlapEnabled and hum and hum.Health > 0 do
+			pcall(function()
+				if hrp and hrp:FindFirstChildOfClass("BodyVelocity") then
+					hrp:FindFirstChildOfClass("BodyVelocity"):Destroy()
+				end
+				hum:ChangeState(Enum.HumanoidStateType.Running)
+				hum.PlatformStand = false
+			end)
+			task.wait(0.2)
+		end
+	end)
+end
+
+MainTab:AddToggle("AntiSlapToggle", {
+	Title = "🛡️ Anti Slap (Chống hất văng)",
+	Default = false
+}):OnChanged(function(Value)
+	AntiSlapEnabled = Value
+	if Value then
+		Library:Notify({
+			Title = "🛡️ Anti Slap",
+			Content = "Đã bật chống hất văng!",
+			Duration = 3
+		})
+		EnableAntiSlap()
+	else
+		Library:Notify({
+			Title = "🛡️ Anti Slap",
+			Content = "Đã tắt chống hất văng.",
+			Duration = 3
+		})
+	end
+end)
+
+----------------------------------------------------
+-- ⚙️ SETTINGS TAB
+----------------------------------------------------
+
+SettingsTab:AddButton({
+	Title = "💾 Save Configuration",
+	Description = "Lưu toàn bộ cấu hình",
+	Callback = function()
+		Library:SaveConfiguration()
+		Library:Notify({
+			Title = "💾 Saved!",
+			Content = "Đã lưu thành công.",
+			Duration = 3
+		})
+	end
+})
+
+SettingsTab:AddButton({
+	Title = "📂 Load Configuration",
+	Description = "Tải cấu hình đã lưu",
+	Callback = function()
+		Library:LoadConfiguration()
+		Library:Notify({
+			Title = "📂 Loaded!",
+			Content = "Đã tải lại cấu hình.",
+			Duration = 3
+		})
+	end
+})
+
+SettingsTab:AddButton({
+	Title = "❌ Close UI",
+	Description = "Ẩn giao diện (ấn RightControl để mở lại)",
+	Callback = function()
+		Window:Minimize()
+	end
+})
+
+----------------------------------------------------
+-- 🚀 Load cấu hình khi mở
+----------------------------------------------------
+
+Library:ConfigIgnore("IgnoreList")
+pcall(function()
+	Library:LoadConfiguration()
+end)
+
+Library:Notify({
+	Title = "🌊 BE HUB Loaded",
+	Content = "Fluent UI khởi động thành công cùng Anti Slap!",
+	Duration = 5
+})
