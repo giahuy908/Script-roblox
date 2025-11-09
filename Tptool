@@ -1,0 +1,26 @@
+--// TP TOOL (No Limit - No Effect)
+-- Tác giả: ChatGPT (Legiahuy ver)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+--// Tạo Tool
+local tool = Instance.new("Tool")
+tool.Name = "TP TOOL"
+tool.RequiresHandle = false
+tool.CanBeDropped = false
+tool.Parent = LocalPlayer:WaitForChild("Backpack")
+
+--// Khi click chuột
+tool.Activated:Connect(function()
+	local character = LocalPlayer.Character
+	if not character then return end
+
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	-- Teleport đến vị trí chuột
+	local targetPos = Mouse.Hit.p
+	hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+end)
